@@ -1,6 +1,6 @@
 # src/silencio2/models.py
 from __future__ import annotations
-from pydantic import BaseModel, Field, field_validator, List
+from pydantic import BaseModel, Field, field_validator
 from typing import List
 
 CODE_RE = r"^\([1-4]\)\([A-EX]\)(?:\([a-ex]\))?$"
@@ -10,7 +10,7 @@ class RedactionItem(BaseModel):
     code: str = Field(pattern=CODE_RE)
     desc: str
     surface: str # canonical match text
-    aliases: List[str] = Field(default_factory=List)
+    aliases: List[str] = Field(default_factory=list)
     scope: str = Field(default="global") # "global" | "file-local"
 
     @field_validator("surface")
@@ -31,7 +31,7 @@ class RedactionItem(BaseModel):
         return vs
 
 class Inventory(BaseModel):
-    items: List[RedactionItem] = Field(default_factory=List)
+    items: List[RedactionItem] = Field(default_factory=list)
 
     def next_id(self) -> int:
         """

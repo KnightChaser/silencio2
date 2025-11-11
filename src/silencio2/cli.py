@@ -1,9 +1,7 @@
 # src/silencio2/cli.py
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-from typing import Optional
 import typer
 from rich import print as rprint
 

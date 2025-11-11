@@ -1,7 +1,7 @@
 [project]
 name = "silencio2"
 version = "0.1.0"
-description = "Add your description here"
+description = "Non-bad text redactor: badge-driven inventory + Aho-Corasick basded fast 'n sober redaction"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -10,3 +10,10 @@ dependencies = [
     "rich>=14.2.0",
     "typer>=0.20.0",
 ]
+
+[project.scripts]
+silencio2 = "silencio2.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

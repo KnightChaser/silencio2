@@ -67,7 +67,7 @@ def redact(
     overwrite: bool = typer.Option(False, help="Overwrite existing files in destination"),
 ):
     """
-
+    Redact .md files from SRC_DIR and save to DST_DIR using the inventory.
     """
     if not src_dir.is_dir():
         rprint(f"[red]Not a directory:[/red] {src_dir}")

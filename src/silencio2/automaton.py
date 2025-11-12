@@ -8,27 +8,35 @@ import ahocorasick
 @dataclass
 class Match:
     start: int
-    end: int      # exclusive
+    end: int        # exclusive
     item_id: int
     code: str
     desc: str
     surface: str
+    variant: str    # "c" for canonical, "a" for alias
+    alias_id: int | None
 
-def build_automaton(patterns: List[Tuple[int, str, str, str]]) -> ahocorasick.Automaton:
+def build_automaton(patterns: List[Tuple[int, str, str, str, int | None, str]]) -> ahocorasick.Automaton:
     """
     Build an Aho-Corasick automaton from the given patterns.
 
     Args:
-        patterns: A list of tuples, each containing (item_id, code, desc, surface).
+        patterns: A list of tuples, each containing:
+            - item_id (int): The ID of the item.
+            - code (str): The code of the item.
+            - desc (str): The description of the item.
+            - variant (str): "c" for canonical, "a" for alias.
+            - alias_id (int | None): The ID of the alias, or None for canonical
+            - surface (str): The surface string to match.
 
     Returns:
         ahocorasick.Automaton: The constructed Aho-Corasick automaton.
     """
     A = ahocorasick.Automaton()
-    for item_id, code, desc, surface in patterns:
+    for item_id, code, desc, variant, alias_id, surface in patterns:
         if not surface:
             continue
-        A.add_word(surface, (item_id, code, desc, surface))
+        A.add_word(surface, (item_id, code, desc, variant, alias_id, surface))
     A.make_automaton()
     return A
 
@@ -45,8 +53,8 @@ def collect_matches(A: ahocorasick.Automaton, text: str) -> List[Match]:
     """
     out: List[Match] = []
     for end_index, payload in A.iter(text):
-        item_id, code, desc, surface = payload
-        start_idx = end_index - len(surface) + 1 # exclusive
+        item_id, code, desc, variant, alias_id, surface = payload
+        start_idx = end_index - len(surface) + 1  # inclusive
         out.append(
             Match(
                 start=start_idx,
@@ -55,9 +63,10 @@ def collect_matches(A: ahocorasick.Automaton, text: str) -> List[Match]:
                 code=code,
                 desc=desc,
                 surface=surface,
+                variant=variant,
+                alias_id=alias_id,
             )
         )
-
     return out
 
 def select_leftmost_longest(matches: List[Match]) -> List[Match]:

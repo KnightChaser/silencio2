@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Tuple, List
+
 from .models import Inventory
 from .automaton import build_automaton, collect_matches, select_leftmost_longest, Match
 from .mdseg import segment, mask_existing_tags
@@ -21,10 +22,10 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
     # Build Aho-Corasick automaton with alias
     patterns = []
     for item in inventory.items:
-        patterns.append((item.id, item.code, item.desc, item.surface))
+        patterns.append((item.id, item.code, item.desc, "c", None, item.surface)) # canonical surface
         for alias in item.aliases:
             if alias:
-                patterns.append((item.id, item.code, item.desc, alias))
+                patterns.append((item.id, item.code, item.desc, "a", alias.id, alias.surface)) # alias surface
     if not patterns:
         return text, []
     A = build_automaton(patterns)
@@ -38,7 +39,7 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
         if not redactable:
             rebuilt.append(chunk)
             continue
-        
+
         safe = mask_existing_tags(chunk)
         matches = collect_matches(A, safe)
         selected = select_leftmost_longest(matches)
@@ -52,8 +53,10 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
         cursor = len(chunk)
         for match in reversed(selected):
             out.append(chunk[match.end:cursor])
-            out.append(f"[REDACTED(#{match.item_id}): {match.code}, {match.desc}]")
-            out.append(chunk[match.start:match.start])  # noop slice
+            # variant marker: "c" for canonical, "a" for alias
+            v = "c" if match.variant == 'c' else f"a{match.alias_id}"
+            out.append(f"[REDACTED(#{match.item_id}|var={v}): {match.code}, {match.desc}]")
+            out.append(chunk[match.start:match.start])
             cursor = match.start
         out.append(chunk[:cursor])
         rebuilt.append("".join(reversed(out)))

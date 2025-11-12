@@ -58,8 +58,12 @@ def list_items(inventory: Path = typer.Option(Path("./silencio2.inventory.json")
         rprint(f"[yellow]Warning:[/yellow] Inventory '{inventory}' is empty.")
         raise typer.Exit(code=0)
     for item in sorted(inv.items, key=lambda x: (x.code, x.surface)):
-        alias_note = f"  (aliases: {len(item.aliases)})" if item.aliases else ""
+        if item.aliases:
+            alias_note = "  (aliases: " + ", ".join(f"{a.id}:{a.surface}" for a in item.aliases) + ")"
+        else:
+            alias_note = ""
         rprint(f"- [cyan]#{item.id}[/cyan] [bold]{item.code}[/bold]: {item.desc} ({item.surface}){alias_note}")
+
 
 @alias_app.command("add")
 def alias_add(
@@ -71,9 +75,12 @@ def alias_add(
     Add an alias surface to an existing item in the inventory.
     """
     inv = load_inventory(inventory)
-    inv.add_alias(item_id=item_id, alias_surface=alias_surface)
+    alias_id = inv.add_alias(item_id=item_id, alias_surface=alias_surface)
     save_inventory(inv, inventory)
-    rprint(f"[green]Alias added[/green] to #{item_id}: {alias_surface!r}")
+    if alias_id == 0:
+        rprint(f"[yellow]Alias already exists[/yellow] for #{item_id}: {alias_surface!r}")
+    else:
+        rprint(f"[green]Alias added[/green] to #{item_id} as id {alias_id}: {alias_surface!r}")
 
 @alias_app.command("list")
 def alias_list(

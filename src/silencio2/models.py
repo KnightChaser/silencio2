@@ -1,16 +1,37 @@
 # src/silencio2/models.py
 from __future__ import annotations
 from pydantic import BaseModel, Field, field_validator
-from typing import List
+from typing import List, Optional
 
 CODE_RE = r"^\([1-4]\)\([A-EX]\)(?:\([a-ex]\))?$"
+
+class Alias(BaseModel):
+    id: int
+    surface: str
+
+    @field_validator("surface")
+    @classmethod
+    def no_empty(cls, v: str) -> str:
+        """
+        Ensure alias surface is not empty or just whitespace.
+
+        Args:
+            v (str): The alias surface string to validate.
+
+        Returns:
+            str: The validated alias surface string.
+        """
+        vs = v.strip()
+        if not vs:
+            raise ValueError("alias surface cannot be empty or whitespace")
+        return vs
 
 class RedactionItem(BaseModel):
     id: int
     code: str = Field(pattern=CODE_RE)
     desc: str
     surface: str # canonical match text
-    aliases: List[str] = Field(default_factory=list)
+    aliases: List[Alias] = Field(default_factory=list) # alternative match texts
     scope: str = Field(default="global") # "global" | "file-local"
 
     @field_validator("surface")
@@ -77,11 +98,10 @@ class Inventory(BaseModel):
             if item.code == code and item.surface == surface:
                 # already exists, return it
                 return item
-            if item.code == code and item.desc == desc and norm_surface and item.aliases:
-                # NOTE:
-                # If same (code, desc) and new surface is already an alias,
-                # we consider it already exists.
-                return item
+            if item.code == code and item.desc == desc:
+                # already present as alias?
+                if any(alias.surface == norm_surface for alias in item.aliases):
+                    return item
 
         # Create new item
         new_item = RedactionItem(
@@ -93,13 +113,17 @@ class Inventory(BaseModel):
         self.items.append(new_item)
         return new_item
 
-    def add_alias(self, item_id: int, alias_surface: str) -> None:
+    def add_alias(self, item_id: int, alias_surface: str) -> int:
         """
         Add an alias surface to an existing RedactionItem.
+        And return the alias ID.
 
         Args:
             item_id (int): The ID of the redaction item.
             alias_surface (str): The alias surface to add.
+
+        Returns:
+            int: The ID of the added alias.
         """
         item = self.find(item_id)
         if not item:
@@ -107,10 +131,39 @@ class Inventory(BaseModel):
 
         alias_surface = alias_surface.strip()
         if not alias_surface:
-            raise ValueError("Alias surface cannot be empty or whitespace")
+            raise ValueError("alias surface cannot be empty or whitespace")
 
-        if alias_surface == item.surface or alias_surface in item.aliases:
+        if alias_surface == item.surface or any(alias.surface == alias_surface for alias in item.aliases):
             # already exists
-            return
+            existing = next((alias for alias in item.aliases if alias.surface == alias_surface), None)
+            return existing.id if existing else 0
 
-        item.aliases.append(alias_surface)
+        next_alias_id = max((alias.id for alias in item.aliases), default=0) + 1 # steadily increase the ID
+        item.aliases.append(
+            Alias(
+                id=next_alias_id,
+                surface=alias_surface
+            )
+        )
+
+        return next_alias_id
+
+    def get_alias_surface(self, item_id: int, alias_id: int) -> Optional[str]:
+        """
+        Given an item ID and alias ID, return the alias surface if exists.
+
+        Args:
+            item_id (int): The ID of the redaction item.
+            alias_id (int): The ID of the alias.
+
+        Returns:
+            Optional[str]: The alias surface if found, else None.
+        """
+        item = self.find(item_id)
+        if not item:
+            return None
+        for alias in item.aliases:
+            if alias.id == alias_id:
+                return alias.surface
+
+        return None

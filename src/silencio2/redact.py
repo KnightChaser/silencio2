@@ -18,8 +18,13 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
     Returns:
         Tuple[str, List[Match]]: A tuple containing the redacted text and a list
     """
-    # Build Aho-Corasick automaton
-    patterns = [(item.id, item.code, item.desc, item.surface) for item in inventory.items]
+    # Build Aho-Corasick automaton with alias
+    patterns = []
+    for item in inventory.items:
+        patterns.append((item.id, item.code, item.desc, item.surface))
+        for alias in item.aliases:
+            if alias:
+                patterns.append((item.id, item.code, item.desc, alias))
     if not patterns:
         return text, []
     A = build_automaton(patterns)

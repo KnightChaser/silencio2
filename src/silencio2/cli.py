@@ -13,6 +13,9 @@ from .unredact import unredact_text
 
 app = typer.Typer(add_completion=False, help="Silencio2 CLI - Manage and redact sensitive information.")
 
+alias_app = typer.Typer(help="Manage aliases")
+app.add_typer(alias_app, name="alias")
+
 @app.command()
 def init(out: Path = typer.Option(Path("./silencio2.inventory.json"), help="Inventory path")):
     """
@@ -54,9 +57,45 @@ def list_items(inventory: Path = typer.Option(Path("./silencio2.inventory.json")
     if not inv.items:
         rprint(f"[yellow]Warning:[/yellow] Inventory '{inventory}' is empty.")
         raise typer.Exit(code=0)
-
     for item in sorted(inv.items, key=lambda x: (x.code, x.surface)):
-        rprint(f"- [cyan]#{item.id}[/cyan] [bold]{item.code}[/bold]: {item.desc} ({item.surface}')")
+        alias_note = f"  (aliases: {len(item.aliases)})" if item.aliases else ""
+        rprint(f"- [cyan]#{item.id}[/cyan] [bold]{item.code}[/bold]: {item.desc} ({item.surface}){alias_note}")
+
+@alias_app.command("add")
+def alias_add(
+    item_id: int,
+    alias_surface: str,
+    inventory: Path = typer.Option(Path("./silencio2.inventory.json"), help="Inventory path")
+):
+    """
+    Add an alias surface to an existing item in the inventory.
+    """
+    inv = load_inventory(inventory)
+    inv.add_alias(item_id=item_id, alias_surface=alias_surface)
+    save_inventory(inv, inventory)
+    rprint(f"[green]Alias added[/green] to #{item_id}: {alias_surface!r}")
+
+@alias_app.command("list")
+def alias_list(
+    item_id: int,
+    inventory: Path = typer.Option(Path("./silencio2.inventory.json"), help="Inventory path")
+):
+    """
+    List all aliases for an item in the inventory.
+    """
+    inv = load_inventory(inventory)
+    item = inv.find(item_id)
+
+    if not item:
+        rprint(f"[red]Error:[/red] Item ID #{item_id} not found in inventory.")
+        raise typer.Exit(2)
+    if not item.aliases:
+        rprint(f"[yellow]No aliases found[/yellow] for item #{item_id}.")
+        return
+
+    rprint(f"[bold]Aliases for #{item_id}[/bold] ({item.code} {item.desc}):")
+    for alias in item.aliases:
+        rprint(f"  - {alias}")
 
 @app.command()
 def redact(

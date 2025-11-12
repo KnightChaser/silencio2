@@ -31,7 +31,9 @@ def segment(text: str) -> List[Tuple[str, bool]]:
 
     return out
 
-TAG_BLOCK = re.compile(r"\[REDACTED\(#\d+\):\s*\([^)]+\),\s*[^]]+\]")
+TAG_BLOCK = re.compile(
+    r"\[REDACTED(?:\(#([0-9]+)\))?: \(([0-9]+)\)\(([A-Z])\)(?:\(([a-z])\))?, (.*?)\]"
+)
 
 def mask_existing_tags(text: str) -> str:
     """

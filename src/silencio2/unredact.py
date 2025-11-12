@@ -4,10 +4,7 @@ from __future__ import annotations
 import re
 from .models import Inventory
 
-# TAG_WITH_ID = re.compile(
-#     r"\[REDACTED(?:\(#([0-9]+)\))?: \(([0-9]+)\)\(([A-Z])\)(?:\(([a-z])\))?, (.*?)\]"
-# )
-
+# e.g., [REDACTED(#1|var=c): (3)(A)(b), Description]
 TAG_WITH_VARIANT = re.compile(
     r"\[REDACTED\(#(?P<id>\d+)\|var=(?P<var>c|a\d+)\):\s*[^,]+,\s*[^]]+\]"
 )

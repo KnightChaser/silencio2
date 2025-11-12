@@ -37,6 +37,7 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
 
     for chunk, redactable in segments:
         if not redactable:
+            # Exclude unredactable segments (such as code fences (as a default))
             rebuilt.append(chunk)
             continue
 
@@ -53,8 +54,12 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
         cursor = len(chunk)
         for match in reversed(selected):
             out.append(chunk[match.end:cursor])
+
+            # NOTE:
             # variant marker: "c" for canonical, "a" for alias
+            # e.g., [REDACTED(#1|var=a2): (3)(A)(b), Description]
             v = "c" if match.variant == 'c' else f"a{match.alias_id}"
+
             out.append(f"[REDACTED(#{match.item_id}|var={v}): {match.code}, {match.desc}]")
             out.append(chunk[match.start:match.start])
             cursor = match.start

@@ -106,7 +106,7 @@ def alias_list(
 
 @app.command()
 def redact(
-    src_dir: Path, 
+    src_dir: Path,
     dst_dir: Path,
     inventory: Path = typer.Option(Path("./silencio2.inventory.json"), help="Inventory path"),
     overwrite: bool = typer.Option(False, help="Overwrite existing files in destination"),

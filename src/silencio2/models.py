@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 
+# e.g., (3)(A)(b)
 CODE_RE = r"^\([1-4]\)\([A-EX]\)(?:\([a-ex]\))?$"
 
 class Alias(BaseModel):
@@ -134,11 +135,11 @@ class Inventory(BaseModel):
             raise ValueError("alias surface cannot be empty or whitespace")
 
         if alias_surface == item.surface or any(alias.surface == alias_surface for alias in item.aliases):
-            # already exists
+            # already exists, turn its ID or 0 if canonical
             existing = next((alias for alias in item.aliases if alias.surface == alias_surface), None)
             return existing.id if existing else 0
 
-        next_alias_id = max((alias.id for alias in item.aliases), default=0) + 1 # steadily increase the ID
+        next_alias_id = max((alias.id for alias in item.aliases), default=0) + 1 # ensure monotonically increasing ID
         item.aliases.append(
             Alias(
                 id=next_alias_id,

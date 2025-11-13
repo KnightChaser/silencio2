@@ -105,7 +105,7 @@ REDACTED_TAG_BLOCK_RE = re.compile(
         \)
         :
         \s*
-        \([^)]+\)                     # code "(1)(A)(b)" – anything until ')'
+        ([^,]+)                       # code up to comma
         ,\s*
         [^\]]+                        # description up to ']'
     \]

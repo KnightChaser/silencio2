@@ -9,7 +9,15 @@ from .patterns import REDACTED_TAG_WITH_VARIANT_RE as TAG_WITH_VARIANT
 def unredact_text(text: str, inventory: Inventory) -> str:
     """
     Replace REDACTED tags with the canonical surface from inventory.
-    If an item ID is missing, the original tag is kept.
+
+    Tag format (produced by `redact.apply_redactions`):
+
+        [REDACTED(#<id>|var=c): (code), desc]
+        [REDACTED(#<id>|var=aN): (code), desc]
+
+    - var=c  : restore canonical `item.surface`
+    - var=aN : restore alias N for that item, if present; otherwise fallback
+               to canonical `item.surface`.
 
     Args:
         text (str): The input text containing REDACTED tags.
@@ -23,7 +31,8 @@ def unredact_text(text: str, inventory: Inventory) -> str:
         var = m.group("var")
         item = inventory.find(item_id)
         if not item:
-            return m.group(0)  # keep the whole tag as-is
+            return m.group(0)  # keep the whole tag as-is if inventory is missing
+
         if var == "c":
             # canonical
             return item.surface

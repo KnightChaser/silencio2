@@ -12,6 +12,15 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
     """
     Apply redactions to the given markdown text based on the inventory.
 
+    Output tag format:
+
+        [REDACTED(#<item_id>|var=c): (code), desc]
+        [REDACTED(#<item_id>|var=aN): (code), desc]
+
+    where:
+        - `var=c`   means canonical surface
+        - `var=aN`  means alias with ID N for that item
+
     Args:
         text (str): The input markdown text.
         inventory (Inventory): The inventory containing items to redact.
@@ -22,12 +31,18 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
     # Build Aho-Corasick automaton with alias
     patterns = []
     for item in inventory.items:
-        patterns.append((item.id, item.code, item.desc, "c", None, item.surface)) # canonical surface
+        patterns.append(
+            (item.id, item.code, item.desc, "c", None, item.surface)
+        ) # canonical surface
         for alias in item.aliases:
             if alias:
-                patterns.append((item.id, item.code, item.desc, "a", alias.id, alias.surface)) # alias surface
+                patterns.append(
+                    (item.id, item.code, item.desc, "a", alias.id, alias.surface)
+                ) # alias surface
+
     if not patterns:
         return text, []
+
     A = build_automaton(patterns)
 
     # Segment markdown; skip code fences
@@ -37,7 +52,7 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
 
     for chunk, redactable in segments:
         if not redactable:
-            # Exclude unredactable segments (such as code fences (as a default))
+            # Exclude unredactable segments such as code fences (as a default)
             rebuilt.append(chunk)
             continue
 
@@ -63,6 +78,7 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
             out.append(f"[REDACTED(#{match.item_id}|var={v}): {match.code}, {match.desc}]")
             out.append(chunk[match.start:match.start])
             cursor = match.start
+
         out.append(chunk[:cursor])
         rebuilt.append("".join(reversed(out)))
         all_matches.extend(selected)

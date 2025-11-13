@@ -7,8 +7,12 @@ from .patterns import BADGE_ARROW_RE, BADGE_PIPE_RE
 
 def parse_badge_lines(line: str) -> Tuple[str, str, str] | None:
     """
-    Parse a single badge line in either ARROW or PIPE format.
-    It assuems `line` has at least one valid badge.
+    Parse a single badge line in either ARROW(=>) or PIPE(|) format.
+
+    Supported format:
+
+        [REDACTED: (3)(A)(b), API key] => AKIA...
+        (3)(A)(b) | API key | AKIA...
 
     Args:
         line (str): The badge line to parse.
@@ -38,6 +42,10 @@ def parse_badge_lines(line: str) -> Tuple[str, str, str] | None:
 def parse_badges(lines: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
     """
     Parse multiple badge lines from an iterable of strings.
+
+    It skips(ignores) the text if:
+        - empty lines
+        - lines starting with '#' (considered annotations)
 
     Args:
         lines (Iterable[str]): An iterable of badge lines.

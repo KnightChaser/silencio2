@@ -1,5 +1,6 @@
 # src/silencio2/models.py
 from __future__ import annotations
+
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 
@@ -28,6 +29,14 @@ class Alias(BaseModel):
         return vs
 
 class RedactionItem(BaseModel):
+    """
+    A single logical redaction unit
+
+    - code: redaction classification code (e.g., "(1)(A)(c)")
+    - desc: human-readable description that explains why this subject has been redacted (e.g., "email address")
+    - surface: canonical text to restore on unredact; equivalently a primary match text for redaction
+    - aliases: alternative surfaces that map back to this redaction item
+    """
     id: int
     code: str = Field(pattern=CODE_RE)
     desc: str
@@ -53,6 +62,13 @@ class RedactionItem(BaseModel):
         return vs
 
 class Inventory(BaseModel):
+    """
+    In-memory representation of the redaction inventory.
+    It provides helpers for:
+    - allocating new item IDs
+    - merging duplicate items
+    - managing alias IDs
+    """
     items: List[RedactionItem] = Field(default_factory=list)
 
     def next_id(self) -> int:
@@ -116,15 +132,15 @@ class Inventory(BaseModel):
 
     def add_alias(self, item_id: int, alias_surface: str) -> int:
         """
-        Add an alias surface to an existing RedactionItem.
-        And return the alias ID.
+        Add an alias surface to an existing RedactionItem,
+        returning the alias ID.
 
         Args:
             item_id (int): The ID of the redaction item.
             alias_surface (str): The alias surface to add.
 
         Returns:
-            int: The ID of the added alias.
+            int: Non-negative (>0) alias ID if new alias added, 0 if alias_surface is canonical surface.
         """
         item = self.find(item_id)
         if not item:
@@ -134,12 +150,21 @@ class Inventory(BaseModel):
         if not alias_surface:
             raise ValueError("alias surface cannot be empty or whitespace")
 
-        if alias_surface == item.surface or any(alias.surface == alias_surface for alias in item.aliases):
+        if alias_surface == item.surface or any(
+            alias.surface == alias_surface for alias in item.aliases
+        ):
             # already exists, turn its ID or 0 if canonical
-            existing = next((alias for alias in item.aliases if alias.surface == alias_surface), None)
+            existing = next(
+                (alias for alias in item.aliases if alias.surface == alias_surface), 
+                None
+            )
             return existing.id if existing else 0
 
-        next_alias_id = max((alias.id for alias in item.aliases), default=0) + 1 # ensure monotonically increasing ID
+        next_alias_id = max(
+            (alias.id for alias in item.aliases), 
+            default=0
+        ) + 1 # ensure monotonically increasing ID
+
         item.aliases.append(
             Alias(
                 id=next_alias_id,

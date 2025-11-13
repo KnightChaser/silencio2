@@ -8,7 +8,9 @@ from .patterns import MD_CODE_FENCE_RE as FENCE, REDACTED_TAG_BLOCK_RE as TAG_BL
 def segment(text: str) -> List[Tuple[str, bool]]:
     """
     Returns segments as (chunk, redactable) tuples.
-    `redactable` is True if the chunk is normal text, False if it's inside a code fence.
+
+    - redactable=True: normal prose where redaction is allowed
+    - redactable=False: inside ``` code fences(default), left untouched
 
     Args:
         text (str): The input markdown text.
@@ -18,6 +20,7 @@ def segment(text: str) -> List[Tuple[str, bool]]:
     """
     out: List[Tuple[str, bool]] = []
     pos = 0
+
     for match in FENCE.finditer(text):
         if match.start() > pos:
             out.append((text[pos:match.start()], True))
@@ -31,9 +34,8 @@ def segment(text: str) -> List[Tuple[str, bool]]:
 
 def mask_existing_tags(text: str) -> str:
     """
-    To prevent dobule-redaction, mask existing REDACTED tags 
-    in the text with black squares(\u25a0),
-    so Aho-Corasick won't match them.
+    Mask existing REDACTED tags in `text` with black squares (■, \u2540) to prevent
+    Aho-Corasick from matching inside already-redacted spans.
 
     Args:
         text (str): The input text.

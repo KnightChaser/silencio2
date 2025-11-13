@@ -1,9 +1,12 @@
 # src/silencio2/badges.py
 from __future__ import annotations
 
+import re
 from typing import Iterable, Iterator, Tuple
 
-from .patterns import BADGE_ARROW_RE, BADGE_PIPE_RE
+from .patterns import BADGE_ARROW_RE, BADGE_PIPE_RE, CODE_RE
+
+_CODE_RE = re.compile(CODE_RE)
 
 def parse_badge_lines(line: str) -> Tuple[str, str, str] | None:
     """
@@ -35,18 +38,19 @@ def parse_badge_lines(line: str) -> Tuple[str, str, str] | None:
     m = BADGE_ARROW_RE.match(line)
     if m:
         code, desc, surface = m.group(1), m.group(2).strip(), m.group(3)
-        return code, desc, surface
     else:
         # Attempt to match PIPE format then
         m = BADGE_PIPE_RE.match(line)
         if m:
             code, desc, surface = m.group(1), m.group(2).strip(), m.group(3)
-            return code, desc, surface
         else:
             raise ValueError(f"Invalid badge line format: {line}")
 
-    # NOTE: All cases have exhausted
+    # Double-check that the code matches the expected classification pattern
+    if not _CODE_RE.match(code):
+            raise ValueError(f"Invalid badge code format: {code}")
 
+    return code, desc, surface
 
 def parse_badges(lines: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
     """

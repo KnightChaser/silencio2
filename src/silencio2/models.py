@@ -140,7 +140,7 @@ class Inventory(BaseModel):
             alias_surface (str): The alias surface to add.
 
         Returns:
-            int: Non-negative (>0) alias ID if new alias added, 0 if alias_surface is canonical surface.
+            int: Non-negative (>0) alias ID if new alias added, 0 if alias_surface already exists (canonical or alias).
         """
         item = self.find(item_id)
         if not item:
@@ -153,12 +153,8 @@ class Inventory(BaseModel):
         if alias_surface == item.surface or any(
             alias.surface == alias_surface for alias in item.aliases
         ):
-            # already exists, turn its ID or 0 if canonical
-            existing = next(
-                (alias for alias in item.aliases if alias.surface == alias_surface), 
-                None
-            )
-            return existing.id if existing else 0
+            # already exists, return 0 for no change
+            return 0
 
         next_alias_id = max(
             (alias.id for alias in item.aliases), 

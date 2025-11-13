@@ -41,9 +41,14 @@ def import_badges(
     lines = badges.read_text(encoding="utf-8").splitlines()
     n_added = 0
 
-    for code, desc, surface in parse_badges(lines):
-        inv.add_or_merge(code=code, desc=desc, surface=surface)
-        n_added += 1
+    try:
+        for code, desc, surface in parse_badges(lines):
+            inv.add_or_merge(code=code, desc=desc, surface=surface)
+            n_added += 1
+    except ValueError as exc:
+        # parse_badges already annotates with "Error parsing line N: ..."
+        rprint(f"[red]Error importing badges from[/red] {badges}:\n  {exc}")
+        raise typer.Exit(code=1)
 
     save_inventory(inv, inventory)
     rprint(f"[green]Success:[/green] Imported {n_added} badges into inventory '{inventory}'.")

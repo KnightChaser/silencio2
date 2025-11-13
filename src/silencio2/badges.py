@@ -18,7 +18,14 @@ def parse_badge_lines(line: str) -> Tuple[str, str, str] | None:
         line (str): The badge line to parse.
 
     Returns:
-        Tuple[str, str, str] | None: A tuple of (code, desc, surface) if a badge is found, else None.
+        Tuple[str, str, str] | None: 
+            A tuple of (code, desc, surface) if a badge is found,
+            else None for empty/comment lines.
+
+    Raises:
+        ValueError: If the line is non-empty/non-comment but does not match
+                    any supported badge format, or the code does not match
+                    the expected classification pattern.
     """
     line = line.strip()
     if not line or line.startswith("#"):
@@ -29,14 +36,16 @@ def parse_badge_lines(line: str) -> Tuple[str, str, str] | None:
     if m:
         code, desc, surface = m.group(1), m.group(2).strip(), m.group(3)
         return code, desc, surface
+    else:
+        # Attempt to match PIPE format then
+        m = BADGE_PIPE_RE.match(line)
+        if m:
+            code, desc, surface = m.group(1), m.group(2).strip(), m.group(3)
+            return code, desc, surface
+        else:
+            raise ValueError(f"Invalid badge line format: {line}")
 
-    # Attempt to match PIPE format then
-    m = BADGE_PIPE_RE.match(line)
-    if m:
-        code, desc, surface = m.group(1), m.group(2).strip(), m.group(3)
-        return code, desc, surface
-
-    raise ValueError(f"Invalid badge line format: {line}")
+    # NOTE: All cases have exhausted
 
 
 def parse_badges(lines: Iterable[str]) -> Iterator[Tuple[str, str, str]]:

@@ -2,12 +2,9 @@
 from __future__ import annotations
 
 import re
-from .models import Inventory
 
-# e.g., [REDACTED(#1|var=c): (3)(A)(b), Description]
-TAG_WITH_VARIANT = re.compile(
-    r"\[REDACTED\(#(?P<id>\d+)\|var=(?P<var>c|a\d+)\):\s*[^,]+,\s*[^]]+\]"
-)
+from .models import Inventory
+from .patterns import REDACTED_TAG_WITH_VARIANT_RE as TAG_WITH_VARIANT
 
 def unredact_text(text: str, inventory: Inventory) -> str:
     """

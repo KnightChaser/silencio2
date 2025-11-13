@@ -1,18 +1,9 @@
 # src/silencio2/badges.py
 from __future__ import annotations
 
-import re
 from typing import Iterable, Iterator, Tuple
 
-# e.g., [REDACTED: (3)(A)(b), api key] => AKIA...
-ARROW = re.compile(
-    r"""^\s*\[REDACTED:\s*(\([1-4]\)\([A-EX]\)(?:\([a-ex]\))?)\s*,\s*([^\]]+?)\]\s*=>\s*(.+?)\s*$"""
-)
-
-# e.g., (3)(A)(b) | api key | AKIA...
-PIPE = re.compile(
-    r"""^\s*(\([1-4]\)\([A-EX]\)(?:\([a-ex]\))?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)\s*$"""
-)
+from .patterns import BADGE_ARROW_RE, BADGE_PIPE_RE
 
 def parse_badge_lines(line: str) -> Tuple[str, str, str] | None:
     """
@@ -30,13 +21,13 @@ def parse_badge_lines(line: str) -> Tuple[str, str, str] | None:
         return None
 
     # Attempt to match ARROW format
-    m = ARROW.match(line)
+    m = BADGE_ARROW_RE.match(line)
     if m:
         code, desc, surface = m.group(1), m.group(2).strip(), m.group(3)
         return code, desc, surface
 
     # Attempt to match PIPE format then
-    m = PIPE.match(line)
+    m = BADGE_PIPE_RE.match(line)
     if m:
         code, desc, surface = m.group(1), m.group(2).strip(), m.group(3)
         return code, desc, surface

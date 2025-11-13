@@ -1,11 +1,9 @@
 # src/silencio2/mdseg.py
 from __future__ import annotations
 
-import re
 from typing import List, Tuple
 
-# Very light segmentation: split out code fences to avoid redacting in them by default
-FENCE = re.compile(r"(^```.*?$)(.*?)(^```$)", re.M | re.S)
+from .patterns import MD_CODE_FENCE_RE as FENCE, REDACTED_TAG_BLOCK_RE as TAG_BLOCK
 
 def segment(text: str) -> List[Tuple[str, bool]]:
     """
@@ -30,9 +28,6 @@ def segment(text: str) -> List[Tuple[str, bool]]:
         out.append((text[pos:], True))
 
     return out
-
-# e.g., [REDACTED(#123|var=c): (1)(A)(b), api key]
-TAG_BLOCK = re.compile(r"\[REDACTED\(#\d+\|var=(?:c|a\d+)\):\s*\([^)]+\),\s*[^]]+\]")
 
 def mask_existing_tags(text: str) -> str:
     """

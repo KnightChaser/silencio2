@@ -3,8 +3,8 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 
-# e.g., (3)(A)(b)
-CODE_RE = r"^\([1-4]\)\([A-EX]\)(?:\([a-ex]\))?$"
+from .patterns import CODE_RE
+
 
 class Alias(BaseModel):
     id: int

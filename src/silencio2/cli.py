@@ -6,7 +6,7 @@ import typer
 from rich import print as rprint
 
 from .store import load_inventory, save_inventory
-from .badges import parse_badges
+from .badges import parse_badges, validate_badge_lines
 from .models import Inventory
 from .redact import apply_redactions
 from .unredact import unredact_text
@@ -52,6 +52,24 @@ def import_badges(
 
     save_inventory(inv, inventory)
     rprint(f"[green]Success:[/green] Imported {n_added} badges into inventory '{inventory}'.")
+
+@app.command("validate-badges")
+def validate_badges_cmd(
+    badges: Path
+) -> None:
+    """
+    Validate a badge file for correct formatting.
+    Fails on any invalid badge-line.
+    """
+    lines = badges.read_text(encoding="utf-8").splitlines()
+    try:
+        n_valid, n_skipped = validate_badge_lines(lines)
+    except ValueError as e:
+        rprint(f"[red]Error validating badges file '{badges}':[/red]\n  {e}")
+        raise typer.Exit(code=1)
+
+    rprint(f"[green]Success:[/green] Validated '{badges}': {n_valid} valid badge lines, {n_skipped} skipped.")
+    raise typer.Exit(code=0)
 
 @app.command()
 def list_items(inventory: Path = typer.Option(Path("./silencio2.inventory.json"), help="Inventory path")):

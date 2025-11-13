@@ -52,6 +52,38 @@ def parse_badge_lines(line: str) -> Tuple[str, str, str] | None:
 
     return code, desc, surface
 
+def validate_badge_lines(lines: Iterable[str]) -> tuple[int, int]:
+    """
+    Strict-mode validate badge file lines to probe.
+
+    It skips(ignores) the text if:
+        - empty lines
+        - lines starting with '#' (considered annotations)
+
+    Args:
+        lines (Iterable[str]): An iterable of badge lines.
+
+    Returns:
+        tuple[int, int]: A tuple of (n_valid, n_skipped) counts.
+
+    Raises:
+        ValueError: If any non-empty/non-comment line fails to parse.
+    """
+    n_valid = 0
+    n_skipped = 0
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.rstrip("\n")
+        if not line.strip() or line.rstrip().startswith("#"):
+            n_skipped += 1
+            continue
+        try:
+            result = parse_badge_lines(line)
+            if result:
+                n_valid += 1
+        except ValueError as e:
+            raise ValueError(f"Error parsing line {idx}: {e}") from e
+    return n_valid, n_skipped
+
 def parse_badges(lines: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
     """
     Parse multiple badge lines from an iterable of strings.

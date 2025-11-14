@@ -16,6 +16,72 @@ app = typer.Typer(add_completion=False, help="Silencio2 CLI - Manage and redact 
 alias_app = typer.Typer(help="Manage aliases")
 app.add_typer(alias_app, name="alias")
 
+@app.command("autoredact")
+def autoredact(
+    policy_file: Path = typer.Option(
+        ...,
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        help="Path to the redaction-policy prompt file (text)"
+    ),
+    src_dir: Path = typer.Option(
+        ...,
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        readable=True,
+        help="Source directory cotnaining (text) documents to be redacted."
+    ),
+    out_dir: Path = typer.Option(
+        ...,
+        exists=False,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        help="Output directory where redacted documents and updated inventory will be saved."
+    ),
+):
+    """
+    Automatically redact documents in SRC_DIR according to the policy in POLICY_FILE,
+    update the inventory at INVENTORY_FILE, and save redacted documents and updated inventory to OUT_DIR.
+    """
+    # Validate policy file is a text file
+    try:
+        policy_text = policy_file.read_text(encoding="utf-8")
+    except Exception as e:
+        rprint(f"[red]Error reading policy file:[/red] {e}")
+        raise typer.Exit(code=1)
+
+    # Verify source directory
+    if not src_dir.is_dir():
+        rprint(f"[red]Source directory does not exist or is not a directory:[/red] {src_dir}")
+        raise typer.Exit(code=1)
+
+    # Ensure output directory-create if missing
+    try:
+        out_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        rprint(f"[red]Output directory already exists:[/red] {out_dir}")
+        raise typer.Exit(code=1)
+
+    # Create an inventory file
+    inventory_file = out_dir / "inventory.json"
+    inv = Inventory(items=[])
+    save_inventory(inv, inventory_file)
+
+    # Stub: Here you’d call LLM suggestion, update inventory, run redaction, etc.
+    rprint(f"[green]Info:[/green] POLICY file: {policy_file}")
+    rprint(f"[green]Info:[/green] SRC DIR: {src_dir}")
+    rprint(f"[green]Info:[/green] OUT DIR: {out_dir}")
+    rprint(f"[green]Info:[/green] INVENTORY file: {inventory_file}")
+
+    # TODO: implement suggestion + inventory merge + redaction pipeline
+    rprint("[yellow]Stub:[/yellow] autoredact logic not yet implemented.")
+
+    raise typer.Exit(code=0)
+
 @app.command()
 def init(out: Path = typer.Option(Path("./silencio2.inventory.json"), help="Inventory path")):
     """

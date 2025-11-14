@@ -46,7 +46,7 @@ def _iter_source_files(src_dir: Path, text_exts: Iterable[str]) -> List[Path]:
     exts = {ext.lower() for ext in text_exts}
     files: List[Path] = []
     for p in src_dir.rglob("*"):
-        if p.is_fifo() and p.suffix.lower() in exts:
+        if p.is_file() and p.suffix.lower() in exts:
             files.append(p)
     return sorted(files)
 

@@ -50,7 +50,7 @@ class Qwen3ChatEngine:
         self._llm = LLM(
             model=self.config.model_name,
             trust_remote_code=True,
-            max_seq_len=self.config.max_model_len,
+            max_model_len=self.config.max_model_len,
         )
         self._tokenizer = AutoTokenizer.from_pretrained(self.config.model_name)
 

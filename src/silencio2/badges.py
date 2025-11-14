@@ -97,6 +97,9 @@ def parse_badges(lines: Iterable[str]) -> Iterator[Tuple[str, str, str]]:
 
     Returns:
         Iterator[Tuple[str, str, str]]: An iterator of tuples (code, desc, surface).
+
+    Raises:
+        ValueError: If any non-empty/non-comment line fails to parse.
     """
     for index, line in enumerate(lines, 1):
         if not line.strip() or line.lstrip().startswith("#"):

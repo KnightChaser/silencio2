@@ -10,6 +10,7 @@ from .badges import parse_badges, validate_badge_lines
 from .models import Inventory
 from .redact import apply_redactions
 from .unredact import unredact_text
+from .llm.autoredact_core import run_autoredact
 
 app = typer.Typer(add_completion=False, help="Silencio2 CLI - Manage and redact sensitive information.")
 
@@ -77,8 +78,25 @@ def autoredact(
     rprint(f"[green]Info:[/green] OUT DIR: {out_dir}")
     rprint(f"[green]Info:[/green] INVENTORY file: {inventory_file}")
 
-    # TODO: implement suggestion + inventory merge + redaction pipeline
-    rprint("[yellow]Stub:[/yellow] autoredact logic not yet implemented.")
+    # Run the full autoredact pipeline (LLM + inventory + deterministic redaction)
+    try:
+        stats = run_autoredact(
+            policy_text=policy_text,
+            src_dir=src_dir,
+            out_dir=out_dir,
+            inventory_file=inventory_file,
+        )
+    except Exception as e:
+        rprint(f"[red]autoredact failed:[/red] {e}")
+        raise typer.Exit(code=1)
+
+    rprint(
+        "[bold green]autoredact finished.[/bold green] "
+        f"files={stats.files_processed}, "
+        f"badges={stats.badges_generated}, "
+        f"new_items={stats.new_items_created}, "
+        f"total_items={stats.total_items_after}"
+    )
 
     raise typer.Exit(code=0)
 

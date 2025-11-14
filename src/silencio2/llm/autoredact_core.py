@@ -87,7 +87,17 @@ def _render_inventory_for_prompt(inventory: Inventory, max_items: int = 200) -> 
 _DEFAULT_ALIAS_AND_FORMAT_GUIDANCE: str = """
 You are a redaction badge extractor.
 
-You MUST obey these formatting rules STRICTLY:
+IMPORTANT ABOUT FORMAT:
+
+- The policy text above may describe "lists", "fields", or "tables"
+  such as: item, code, desc, aliases, notes.
+- Those are ONLY for your internal reasoning.
+- For this tool, you MUST IGNORE any instructions about returning lists,
+  tables, JSON, or free-form explanations.
+
+For YOUR ACTUAL OUTPUT in this tool, you MUST OBEY THESE RULES EXACTLY:
+
+1) Output format
 
 - Output ONLY badge lines, one per line, using EXACTLY this format:
     [REDACTED: (code), desc] => surface
@@ -95,17 +105,39 @@ You MUST obey these formatting rules STRICTLY:
     [REDACTED: (1)(A)(c), email address] => alice@example.com
     [REDACTED: (3)(B)(a), project codename] => Project Phoenix
 
-- Do NOT output Markdown, bullet lists, prose, or explanations.
-- Do NOT invent any surfaces that do not appear in the input text.
-- If the same surface appears multiple times, emit at most ONE badge line for it.
+- Do NOT output:
+    - bullet lists
+    - numbered lists
+    - Markdown formatting
+    - prose explanations
+    - JSON
+    - extra commentary before or after the badge lines
+
+- If you output anything other than badge lines in the exact format above,
+  the tool WILL FAIL.
+
+2) Code format
+
+- code MUST be in the form shown in the legend, e.g.:
+    (1)(A)(c), (3)(B)(d), (2)(C), (4)(D)
+- Each level MUST be wrapped in parentheses, for example:
+    "(3)(A)(b)" is valid.
+    "3.A.b", "[3][A][b]", "3(A)(b)", or "3-AB" are INVALID.
+
+3) Surface and deduplication
+
+- The "surface" on the right-hand side MUST be copied EXACTLY from the input text.
+  Do NOT normalize, translate, or reformat it.
+- If a given surface string appears multiple times in the text with the same (code, desc),
+  you MUST output at most ONE badge line for that surface.
 - If you are unsure whether something should be redacted, OMIT it instead of guessing.
 
-Inventory usage:
+4) Aliases and inventory
 
-- You are given a list of already-known items (code, desc, surface).
-- Prefer re-using the same (code, desc) for semantically identical items,
-  but do NOT change the surface form.
-- The tool will perform deduplication; you do NOT need to manage aliases yourself.
+- You are given an inventory snapshot listing already-known items.
+- If you see exactly the same surface as an existing item, you may reuse the same (code, desc),
+  but you STILL output a badge line in the same format; the caller deduplicates later.
+- Do NOT try to output "aliases" yourself; the caller handles alias creation.
 """.strip()
 
 def _build_badge_prompt(
@@ -127,6 +159,15 @@ def _build_badge_prompt(
     inventory_snippet = _render_inventory_for_prompt(inventory)
 
     user_content = f"""\
+The following is your redaction policy and category legend.
+Use it ONLY to decide *what* should be redacted and which (code, desc) to use.
+Ignore any instructions there about output formats, lists, or tables; your actual
+output format is defined later in this prompt.
+
+---
+Redaction policy (reference only)
+---
+
 {policy_text}
 
 ---

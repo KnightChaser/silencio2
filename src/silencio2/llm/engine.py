@@ -77,7 +77,11 @@ class Qwen3ChatEngine:
 
         prompt = self._tokenizer.apply_chat_template(
             hf_messages,
-            tokenizer=self._tokenizer,
+            # tokenizer=self._tokenizer,
+
+            # NOTE:
+            # Make sure we get a string, not token IDs -- vLLM expects a string prompt.
+            tokenize=False,
             add_generation_prompt=True,
         )
         return prompt

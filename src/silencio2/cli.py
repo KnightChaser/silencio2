@@ -42,6 +42,10 @@ def autoredact(
         writable=True,
         help="Output directory where redacted documents and updated inventory will be saved."
     ),
+    inventory_file: Path | None = typer.Option(
+        None,
+        help="Path to inventory JSON, Defaults to OUT_DIR/inventory.json"
+    )
 ):
     """
     Automatically redact documents in SRC_DIR according to the policy in POLICY_FILE,
@@ -73,10 +77,15 @@ def autoredact(
         rprint(f"[red]Output directory already exists:[/red] {out_dir}")
         raise typer.Exit(code=1)
 
-    # Create an inventory file
-    inventory_file = out_dir / "inventory.json"
-    inv = Inventory(items=[])
-    save_inventory(inv, inventory_file)
+    # Normalize out_dir path
+    out_dir = out_dir.resolve()
+
+    # Decide inventory path
+    if inventory_file is None:
+        inventory_file = out_dir / "inventory.json"
+    else:
+        inventory_file = inventory_file.resolve()
+    rprint(f"[green]Info:[/green] Using inventory file at: {inventory_file}")
 
     # Stub: Here you’d call LLM suggestion, update inventory, run redaction, etc.
     rprint(f"[green]Info:[/green] POLICY file: {policy_file}")

@@ -10,7 +10,7 @@ from rich import print as rprint
 from ..models import Inventory
 from ..store import load_inventory, save_inventory
 from ..badges import parse_badges
-from ..redact import apply_redactions
+from ..redact import apply_redactions, build_automaton_for_inventory
 from .engine import Qwen3ChatEngine, Qwen3Config, ChatMessage
 
 # TODO:
@@ -346,13 +346,18 @@ def run_autoredact(
     save_inventory(inv, inventory_file)
     after_items = len(inv.items)
 
+    A = build_automaton_for_inventory(inv)
+
     # 2) Apply deterministic redaction with the final inventory
     out_redact_dir.mkdir(parents=True, exist_ok=True)
 
     for path in files:
         rel = path.relative_to(src_dir)
         text = path.read_text(encoding="utf-8", errors="ignore")
-        redacted, matches = apply_redactions(text, inv)
+        redacted, matches = apply_redactions(
+            text=text,
+            inventory=inv,
+            automaton=A)
 
         # e.g. foo.md -> foo.redacted.md
         stem = path.stem

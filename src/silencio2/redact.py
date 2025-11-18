@@ -1,14 +1,47 @@
 # src/silencio2/redact.py
 from __future__ import annotations
 
+import ahocorasick
 from typing import Tuple, List
 
 from .models import Inventory
 from .automaton import build_automaton, collect_matches, select_leftmost_longest, Match
 from .mdseg import segment, mask_existing_tags
 
+def build_automaton_for_inventory(inventory: Inventory) -> ahocorasick.Automaton | None:
+    """
+    Build an Aho-Corasick automaton from the given inventory.
 
-def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]:
+    Args:
+        inventory (Inventory): The inventory containing items to include
+
+    Returns:
+        ahocorasick.Automaton | None: The constructed Aho-Corasick automaton,
+            or None if there are no patterns.
+    """
+    patterns: List[Tuple[int, str, str, str, int | None, str]] = []
+    for item in inventory.items:
+        # canonical
+        patterns.append(
+            (item.id, item.code, item.desc, "c", None, item.surface)
+        )
+        # aliases
+        for alias in item.aliases:
+            if alias:
+                patterns.append(
+                    (item.id, item.code, item.desc, "a", alias.id, alias.surface)
+                )
+
+    if not patterns:
+        return None
+    return build_automaton(patterns)
+
+
+def apply_redactions(
+    text: str, 
+    inventory: Inventory,
+    automaton: ahocorasick.Automaton | None = None
+) -> Tuple[str, List[Match]]:
     """
     Apply redactions to the given markdown text based on the inventory.
 
@@ -24,26 +57,30 @@ def apply_redactions(text: str, inventory: Inventory) -> Tuple[str, List[Match]]
     Args:
         text (str): The input markdown text.
         inventory (Inventory): The inventory containing items to redact.
+        automaton (ahocorasick.Automaton | None): Optional pre-built automaton.
 
     Returns:
         Tuple[str, List[Match]]: A tuple containing the redacted text and a list
     """
-    # Build Aho-Corasick automaton with alias
-    patterns = []
-    for item in inventory.items:
-        patterns.append(
-            (item.id, item.code, item.desc, "c", None, item.surface)
-        ) # canonical surface
-        for alias in item.aliases:
-            if alias:
-                patterns.append(
-                    (item.id, item.code, item.desc, "a", alias.id, alias.surface)
-                ) # alias surface
+    if automaton is None:
+        # Build Aho-Corasick automaton with alias
+        patterns = []
+        for item in inventory.items:
+            patterns.append(
+                (item.id, item.code, item.desc, "c", None, item.surface)
+            ) # canonical surface
+            for alias in item.aliases:
+                if alias:
+                    patterns.append(
+                        (item.id, item.code, item.desc, "a", alias.id, alias.surface)
+                    ) # alias surface
 
-    if not patterns:
-        return text, []
+        if not patterns:
+            return text, []
 
-    A = build_automaton(patterns)
+        A = build_automaton(patterns)
+    else:
+        A = automaton
 
     # Segment markdown; skip code fences
     segments = segment(text)

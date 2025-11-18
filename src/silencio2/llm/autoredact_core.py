@@ -16,7 +16,16 @@ from .engine import Qwen3ChatEngine, Qwen3Config, ChatMessage
 # TODO:
 # File types considered "text" for initial autoredact
 # Maybe add more pure text types later
-DEFAULT_TEXT_EXTS: tuple[str, ...] = (".md", ".markdown", ".txt")
+DEFAULT_TEXT_EXTS: tuple[str, ...] = (
+    ".md",        # Markdown
+    ".markdown",  # Markdown
+    ".txt"        # Plain text
+    ".0",         # Plain text (usually for License files)
+    ".asc",       # ASCII armored files
+    ".csv",       # Comma-separated values
+    ".odt",       # OpenDocument Text
+    ".rtf",       # Rich Text Format
+)
 
 @dataclass
 class AutoredactStats:

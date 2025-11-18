@@ -33,6 +33,7 @@ class Qwen3Config:
     temperature: float = 0.3        # lower for more deterministic badges
     top_p: float = 0.9
     max_tokens: int = 1024          # enough for badge lines
+    seed: int | None = None         # for reproducibility, set to an int value if desired
 
 @dataclass
 class Qwen3ChatEngine:
@@ -110,6 +111,7 @@ class Qwen3ChatEngine:
             temperature=temperature if temperature is not None else self.config.temperature,
             top_p=self.config.top_p,
             max_tokens=max_tokens if max_tokens is not None else self.config.max_tokens,
+            seed=self.config.seed,
         )
 
         prompt = self._build_prompt(messages)

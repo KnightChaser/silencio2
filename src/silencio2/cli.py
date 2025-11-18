@@ -10,7 +10,6 @@ from .badges import parse_badges, validate_badge_lines
 from .models import Inventory
 from .redact import apply_redactions
 from .unredact import unredact_text
-from .llm.autoredact_core import run_autoredact
 
 app = typer.Typer(add_completion=False, help="Silencio2 CLI - Manage and redact sensitive information.")
 
@@ -48,6 +47,13 @@ def autoredact(
     Automatically redact documents in SRC_DIR according to the policy in POLICY_FILE,
     update the inventory at INVENTORY_FILE, and save redacted documents and updated inventory to OUT_DIR.
     """
+    try:
+        from .llm.autoredact_core import run_autoredact
+    except ImportError as e:
+        rprint("[red]Error:[/red] LLM dependencies are not installed. Please install silencio2 with the 'llm' extra:\n"
+               "  uv pip install silencio2[llm]")
+        raise typer.Exit(code=1)
+
     # Validate policy file is a text file
     try:
         policy_text = policy_file.read_text(encoding="utf-8")

@@ -124,11 +124,11 @@ class Inventory(BaseModel):
         Returns:
             RedactionItem: The added or merged redaction item.
         """
-        norm_surface = surface
+        norm_surface = surface.strip()
 
         # Merge only when exact same (code, surface) alraedy exists.
         for item in self.items:
-            if item.code == code and item.surface == surface:
+            if item.code == code and item.surface == norm_surface:
                 # already exists, return it
                 return item
             if item.code == code and item.desc == desc:

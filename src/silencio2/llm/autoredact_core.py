@@ -19,7 +19,7 @@ from .engine import Qwen3ChatEngine, Qwen3Config, ChatMessage
 DEFAULT_TEXT_EXTS: tuple[str, ...] = (
     ".md",        # Markdown
     ".markdown",  # Markdown
-    ".txt"        # Plain text
+    ".txt",       # Plain text
     ".0",         # Plain text (usually for License files)
     ".asc",       # ASCII armored files
     ".csv",       # Comma-separated values

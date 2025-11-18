@@ -83,7 +83,7 @@ def select_leftmost_longest(matches: List[Match]) -> List[Match]:
     # NOTE:
     # Sorts by the start position (ascending). Earlier matches come first.
     # Then, sorts by match length (descending). Longer matches come first if they start at the same position.
-    matches.sort(key=lambda m: (m.start, -(m.end - m.start)))
+    matches = sorted(matches, key=lambda m: (m.start, -(m.end - m.start)))
 
     selected: List[Match] = []
     last_end = -1

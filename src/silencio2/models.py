@@ -1,7 +1,7 @@
 # src/silencio2/models.py
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, PrivateAttr
 from typing import List, Optional
 
 from .patterns import CODE_RE
@@ -69,7 +69,15 @@ class Inventory(BaseModel):
     - merging duplicate items
     - managing alias IDs
     """
+    # Readaction items in the inventory
     items: List[RedactionItem] = Field(default_factory=list)
+
+    # Internal index for fast lookup by ID (O(1) time)
+    _by_id: dict[int, RedactionItem] = PrivateAttr(default_factory=dict)
+
+    def model_post_init(self, _ctx):
+        # Build internal index
+        self._by_id = {item.id: item for item in self.items}
 
     def next_id(self) -> int:
         """
@@ -82,7 +90,7 @@ class Inventory(BaseModel):
 
     def find(self, item_id: int) -> RedactionItem | None:
         """
-        Find a RedactionItem by its ID.
+        Find a RedactionItem by its ID in O(1) time.
 
         Args:
             item_id (int): The ID of the redaction item to find.
@@ -90,10 +98,18 @@ class Inventory(BaseModel):
         Returns:
             RedactionItem | None: The found redaction item, or None if not found.
         """
-        for item in self.items:
-            if item.id == item_id:
-                return item
-        return None
+        return self._by_id.get(item_id)
+
+    def _register_item(self, item: RedactionItem) -> None:
+        """
+        Register a RedactionItem into the inventory.
+        It updates both the items list and the internal index.
+
+        Args:
+            item (RedactionItem): The redaction item to register.
+        """
+        self.items.append(item)
+        self._by_id[item.id] = item
 
     def add_or_merge(self, code: str, desc: str, surface: str) -> RedactionItem:
         """
@@ -127,7 +143,7 @@ class Inventory(BaseModel):
             desc=desc,
             surface=norm_surface,
         )
-        self.items.append(new_item)
+        self._register_item(new_item) # add to inventory
         return new_item
 
     def add_alias(self, item_id: int, alias_surface: str) -> int:

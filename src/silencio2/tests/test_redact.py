@@ -2,7 +2,6 @@
 
 import pytest
 from silencio2.redact import apply_redactions
-from silencio2.models import Inventory
 
 def test_apply_redactions_no_items(empty_inventory):
     inv = empty_inventory

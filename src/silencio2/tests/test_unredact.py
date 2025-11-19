@@ -2,23 +2,15 @@
 
 import pytest
 from silencio2.unredact import unredact_text
-from silencio2.models import Inventory, RedactionItem, Alias
+from silencio2.models import Inventory
 
 def make_inventory_for_unredact():
-    inv = Inventory(items=[])
-    item = RedactionItem(
-        id=10, 
-        code="(1)(A)(c)", 
+    inv = Inventory()
+    item = inv.add_or_merge(
+        code="(1)(A)(c)",
         desc="email address", 
-        surface="user@example.com", 
-        aliases=[
-            Alias(
-                id=1, 
-                surface="user_alt@example.com"
-            )
-        ], 
-        scope="global")
-    inv.items.append(item)
+        surface="user@example.com")
+    inv.add_alias(item.id, "user_alt@example.com")
     return inv
 
 def test_unredact_missing_item_keeps_tag():
@@ -29,19 +21,19 @@ def test_unredact_missing_item_keeps_tag():
 
 def test_unredact_canonical_variant():
     inv = make_inventory_for_unredact()
-    text = "[REDACTED(#10|var=c): (1)(A)(c), email address]"
+    text = "[REDACTED(#1|var=c): (1)(A)(c), email address]"
     out = unredact_text(text, inv)
     assert out == "user@example.com"
 
 def test_unredact_alias_variant():
     inv = make_inventory_for_unredact()
-    text = "[REDACTED(#10|var=a1): (1)(A)(c), email address]"
+    text = "[REDACTED(#1|var=a1): (1)(A)(c), email address]"
     out = unredact_text(text, inv)
     assert out == "user_alt@example.com"
 
 def test_unredact_multiple_tags():
     inv = make_inventory_for_unredact()
-    text = "First [REDACTED(#10|var=c): (1)(A)(c), email address] then [REDACTED(#10|var=a1): (1)(A)(c), email address]"
+    text = "First [REDACTED(#1|var=c): (1)(A)(c), email address] then [REDACTED(#1|var=a1): (1)(A)(c), email address]"
     out = unredact_text(text, inv)
     assert out == "First user@example.com then user_alt@example.com"
 
